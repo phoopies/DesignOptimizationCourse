@@ -127,11 +127,10 @@ constraints = [con3, con4]  # List of constraints for MOProblem class
 
 # Create the problem
 # This problem object can be passed to various different methods defined in DESDEO
-prob = MOProblem(objectives=objectives, variables=variables)
-print(prob.variables)
+prob = MOProblem(objectives=objectives, variables=variables, constraints = constraints)
 print(prob.evaluate(initial_values))
 
-# NSGAIII, Uncomment below to see solve with NSGAIII
+# # NSGAIII, Uncomment below to see solve with NSGAIII
 # evolver = NSGAIII(prob, n_iterations=10, n_gen_per_iter=20, population_size=100)
 
 # plot, pref = evolver.requests()
@@ -162,34 +161,34 @@ print(prob.evaluate(initial_values))
 
 
 # RVEA
-# from desdeo_emo.othertools.plotlyanimate import animate_init_, animate_next_
+from desdeo_emo.othertools.plotlyanimate import animate_init_, animate_next_
 
-# evolver = RVEA(prob, interact=True, n_iterations=5, n_gen_per_iter=100)
-# figure = animate_init_(evolver.population.objectives, filename="river.html")
-# plot, pref = evolver.requests()
+evolver = RVEA(prob, interact=True, n_iterations=15, n_gen_per_iter=100)
+figure = animate_init_(evolver.population.objectives, filename="river.html")
+plot, pref = evolver.requests()
 
-# print(plot.content["dimensions_data"])
+print(plot.content["dimensions_data"])
 
-# while evolver.continue_evolution():
-#     print(f"Current iteration {evolver._iteration_counter}")
-#     plot, pref = evolver.iterate()
-#     figure = animate_next_(
-#         plot.content['data'].values,
-#         figure,
-#         filename="river.html",
-#         generation=evolver._iteration_counter,
-#     )
+while evolver.continue_evolution():
+    print(f"Current iteration {evolver._iteration_counter}")
+    plot, pref = evolver.iterate()
+    figure = animate_next_(
+        plot.content['data'].values,
+        figure,
+        filename="river.html",
+        generation=evolver._iteration_counter,
+    )
 
-# print(plot.content['data'])
+print(plot.content['data'])
 
-# individuals = evolver.population.individuals
+individuals = evolver.population.individuals
 
-# print(f"Some individual: {individuals[0]}")
-# print(f"Objective values with i.e individual:\n"
-#         f"Weight = {weight(individuals[0])}\n"
-#         f"Stress = {stress(individuals[0])}\n"
-#         f"Buckling stress = {buckling_stress(individuals[0])}\n"
-#         f"Deflection = {deflection(individuals[0])}\n")
+print(f"Some individual: {individuals[0]}")
+print(f"Objective values with above individual:\n"
+        f"Weight = {weight(individuals[0])}\n"
+        f"Stress = {stress(individuals[0])}\n"
+        f"Buckling stress = {buckling_stress(individuals[0])}\n"
+        f"Deflection = {deflection(individuals[0])}\n")
 
 
 
@@ -236,14 +235,14 @@ print(prob.evaluate(initial_values))
 # print(f"Is the deflection constraint breached: {'YES' if (deflection_max - obj_vector[3] < 0) else 'NO'}")
 
 #NIMBUS
-from desdeo_mcdm.interactive.NIMBUS import NIMBUS
+# from desdeo_mcdm.interactive.NIMBUS import NIMBUS
 
-method = NIMBUS(prob) # 
-# Start solving
-classification_request, plot_request = method.start()
+# method = NIMBUS(prob) # 
+# # Start solving
+# classification_request, plot_request = method.start()
 
-print(classification_request.content["message"])
-print(classification_request.content)
+# print(classification_request.content["message"])
+# print(classification_request.content)
 
-#Give preference info
-response = {"classifications": [""]}
+# #Give preference info
+# response = {"classifications": [""]}
