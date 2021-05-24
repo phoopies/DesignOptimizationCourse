@@ -18,7 +18,6 @@ p density (lbs/in^3)
 P load (1000 lbs)
 """
 
-from typing import overload
 from desdeo_problem.Constraint import ScalarConstraint
 from desdeo_problem.Problem import MOProblem
 from desdeo_problem.Objective import _ScalarObjective
@@ -27,12 +26,14 @@ from desdeo_emo.EAs.RVEA import RVEA
 from desdeo_emo.EAs.NSGAIII import NSGAIII
 import numpy as np
 
+# Maybe the load should be a constant assigned here and then change the objective funcions a little
+load = 66
 
 # Defining the objective functions
 def weight(xs: np.ndarray) -> np.ndarray:
     xs = np.atleast_2d(xs)
     H, d, t, B, E, p, P = xs[0]  # Assign the values to named variables for clarity
-    return np.array([p * 2 * np.pi * d * t * np.sqrt(np.square(B / 2) + np.square(H))])
+    return p * 2 * np.pi * d * t * np.sqrt(np.square(B / 2) + np.square(H))
 
 
 def stress(xs: np.ndarray) -> np.ndarray:
@@ -40,43 +41,43 @@ def stress(xs: np.ndarray) -> np.ndarray:
     H, d, t, B, E, p, P = xs[0]
     numerator = P * np.sqrt(np.square(B / 2) + np.square(H))
     denominator = 2 * t * np.pi * d * H
-    return np.array([numerator / denominator])
+    return numerator / denominator
 
 
 def buckling_stress(xs: np.ndarray) -> np.ndarray:
     xs = np.atleast_2d(xs)
     H, d, t, B, E, p, P = xs[0]
-    numerator = np.pi * E * (np.square(d) + np.square(t))
+    numerator = np.square(np.pi) * E * (np.square(d) + np.square(t))
     denominator = 8 * (np.square(B / 2) + np.square(H))
-    return np.array([numerator / denominator])
+    return numerator / denominator
 
 
 def deflection(xs: np.ndarray) -> np.ndarray:
     xs = np.atleast_2d(xs)
     H, d, t, B, E, p, P = xs[0]
-    numerator = P * np.float_power(np.square(B / 2) + np.square(H), 1.5)
+    numerator = P * np.power(np.square(B / 2) + np.square(H), (3/2))
     denominator = 2 * t * np.pi * d * np.square(H) * E
-    return np.array([numerator / denominator])
+    return numerator / denominator
 
 
-# Defining variables
-var_names = ["H", "d", "t", "B", "E", "p", "P"]  # Meanings above
+# Defining (decision) variables
+# Height, diameter, thickness, Seperation distance, modulus of elasticity, density, load
+var_names = ["H", "d", "t", "B", "E", "p", "P"] 
 var_count = len(var_names)
 
-initial_values = np.array([30.0, 3.0, 0.15, 60.0, 30.0, 0.3, 95.0])
+initial_values = np.array([30.0, 3.0, 0.15, 60.0, 30000., 0.3, 66.0])
 
 # set lower bounds for each variable
-lower_bounds = np.array([20.0, 0.5, 0.01, 20.0, 10.0, 0.01, 90.0])
+lower_bounds = np.array([20.0, 0.5, 0.01, 20.0, 25000., 0.01, 60.0])
 
 # set upper bounds for each variable
-upper_bounds = np.array([60.0, 5.0, 1.0, 100.0, 50.0, 0.5, 100.0])
+upper_bounds = np.array([60.0, 5.0, 1.0, 100.0, 40000., 0.5, 70.0])
 # TODO If one wishes to fix a variable to a certain value (constant value)
 
 # Trying to minimize everything so no need to define minimize array
 
 # Create a list of Variables for MOProblem class
 variables = variable_builder(var_names, initial_values, lower_bounds, upper_bounds)
-
 
 # Define objectives
 obj1 = _ScalarObjective("Weight", weight)
@@ -90,7 +91,7 @@ obj4 = _ScalarObjective("Deflection", deflection)
 objectives = [obj1, obj2, obj3, obj4]
 objectives_count = len(objectives)
 
-# Define maximun values for constrains
+# Define maximun values for objective functions
 weight_max = 24
 stress_max = 100
 b_stress_max = 250
@@ -114,35 +115,21 @@ con3 = ScalarConstraint(
     "Buckling stress", var_count, objectives_count, const_buckling_stress
 )
 con4 = ScalarConstraint("Deflection", var_count, objectives_count, const_deflection)
-# A constraint of form obj1 - obj2 < C can be declared as
-# const = lambda xs, ys: C - (o1(xs) - o2(xs))
-# con = ScalarConstraint("c", var_count, objectives_count, const)
-# Also if a constraint of form  A < obj1 < C is needed:
-# One can declare 2 constraints for obj1, i guess
+"""
+A constraint of form obj1 - obj2 < C can be declared as
+const = lambda xs, ys: C - (o1(xs) - o2(xs))
+con = ScalarConstraint("c", var_count, objectives_count, const)
+Also if a constraint of form  A < obj1 < C is needed:
+One can declare 2 constraints for obj1, i guess
+"""
 
 constraints = [con3, con4]  # List of constraints for MOProblem class
 
 # Create the problem
 # This problem object can be passed to various different methods defined in DESDEO
-prob = MOProblem(objectives=objectives, variables=variables, constraints=constraints)
-
-
-# Solving the problem with NSGAIII
-
-# Make sure the size of ideal and nadir vectors are equal to the count of objectives
-# Is there a method which calculates ideal and nadir points
-
-# For other methods, i.e RPM. BUT constraints are not supported with all methods
-ideal = np.zeros(objectives_count)
-nadir = np.array(
-    [
-        50.0,
-        80.0,
-        250.0,
-        1.0,
-    ]
-)[:objectives_count]
-rp = np.array([23.99, 49.52, 185.3, 0.099])[:objectives_count]
+prob = MOProblem(objectives=objectives, variables=variables)
+print(prob.variables)
+print(prob.evaluate(initial_values))
 
 # NSGAIII, Uncomment below to see solve with NSGAIII
 # evolver = NSGAIII(prob, n_iterations=10, n_gen_per_iter=20, population_size=100)
@@ -175,31 +162,88 @@ rp = np.array([23.99, 49.52, 185.3, 0.099])[:objectives_count]
 
 
 # RVEA
-from desdeo_emo.othertools.plotlyanimate import animate_init_, animate_next_
+# from desdeo_emo.othertools.plotlyanimate import animate_init_, animate_next_
 
-evolver = RVEA(prob, interact=True, n_iterations=5, n_gen_per_iter=100)
-figure = animate_init_(evolver.population.objectives, filename="river.html")
-plot, pref = evolver.requests()
+# evolver = RVEA(prob, interact=True, n_iterations=5, n_gen_per_iter=100)
+# figure = animate_init_(evolver.population.objectives, filename="river.html")
+# plot, pref = evolver.requests()
 
-print(plot.content["dimensions_data"])
+# print(plot.content["dimensions_data"])
 
-while evolver.continue_evolution():
-    print(f"Current iteration {evolver._iteration_counter}")
-    plot, pref = evolver.iterate()
-    figure = animate_next_(
-        plot.content['data'].values,
-        figure,
-        filename="river.html",
-        generation=evolver._iteration_counter,
-    )
+# while evolver.continue_evolution():
+#     print(f"Current iteration {evolver._iteration_counter}")
+#     plot, pref = evolver.iterate()
+#     figure = animate_next_(
+#         plot.content['data'].values,
+#         figure,
+#         filename="river.html",
+#         generation=evolver._iteration_counter,
+#     )
 
-print(plot.content['data'])
+# print(plot.content['data'])
 
-individuals = evolver.population.individuals
+# individuals = evolver.population.individuals
 
-print(f"Some individual: {individuals[0]}")
-print(f"Objective values with i.e individual:\n"
-        f"Weight = {weight(individuals[0])}\n"
-        f"Stress = {stress(individuals[0])}\n"
-        f"Buckling stress = {buckling_stress(individuals[0])}\n"
-        f"Deflection = {deflection(individuals[0])}\n")
+# print(f"Some individual: {individuals[0]}")
+# print(f"Objective values with i.e individual:\n"
+#         f"Weight = {weight(individuals[0])}\n"
+#         f"Stress = {stress(individuals[0])}\n"
+#         f"Buckling stress = {buckling_stress(individuals[0])}\n"
+#         f"Deflection = {deflection(individuals[0])}\n")
+
+
+
+# # RPM
+# from desdeo_mcdm.interactive.ReferencePointMethod import ReferencePointMethod
+# # from desdeo_mcdm.utilities.solvers import payoff_table_method
+
+# # ideal, nadir = payoff_table_method(prob)
+
+# # print(f"Nadir: {nadir}\nIdeal: {ideal}")
+
+# method = ReferencePointMethod(problem=prob)
+
+# req = method.start()
+# rp = np.array([23.99, 49.52, 185.3, 0.099])[:objectives_count]
+# req.response = {
+#     "reference_point": rp,
+# }
+
+# req = method.iterate(req)
+# step = 1
+# print("\nStep number: ", method._h)
+# print("Reference point: ", rp)
+# print("Pareto optimal solution: ", req.content["current_solution"])
+# print("Additional solutions: ", req.content["additional_solutions"])
+
+# while step < 4:
+#         step += 1
+#         rp = np.array([np.random.uniform(i, n) for i, n in zip(ideal, nadir)])
+#         req.response = {"reference_point": rp, "satisfied": False}
+#         req = method.iterate(req)
+#         print("\nStep number: ", method._h)
+#         print("Reference point: ", rp)
+#         print("Pareto optimal solution: ", req.content["current_solution"])
+#         print("Additional solutions: ", req.content["additional_solutions"])
+
+# req.response = {"satisfied": True, "solution_index": 0}
+# req = method.iterate(req)
+
+# msg, final_sol, obj_vector = req.content.values()
+# print(msg)
+
+# print(f"Objective vector = {obj_vector}")
+# print(f"Is the deflection constraint breached: {'YES' if (deflection_max - obj_vector[3] < 0) else 'NO'}")
+
+#NIMBUS
+from desdeo_mcdm.interactive.NIMBUS import NIMBUS
+
+method = NIMBUS(prob) # 
+# Start solving
+classification_request, plot_request = method.start()
+
+print(classification_request.content["message"])
+print(classification_request.content)
+
+#Give preference info
+response = {"classifications": [""]}
