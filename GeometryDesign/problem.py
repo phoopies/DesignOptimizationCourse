@@ -25,7 +25,7 @@ def min_height(point_cloud_1d: np.ndarray) -> np.ndarray:
     """
     Project point from floor along the z axis to the hull
     distance from the starting point to the projection point
-    find the smallest.
+    find the smallest
     """
     return 0
 
@@ -37,7 +37,6 @@ def floor_area(point_cloud_1d: np.ndarray) -> np.ndarray:
     lowest_z = np.min(point_cloud[:,2])
     close_to_lowest_z = lambda z: np.abs(lowest_z - z) < 0.01 # Some small number
     floor_point_cloud = np.array([[x,y] for x,y,z in point_cloud if close_to_lowest_z(z)])
-    print(floor_point_cloud)
     if len(floor_point_cloud) <= 2: # TODO check that forms an area, i.e all points not in same line
         return 0 # Area of a point or line is 0
     floor_hull = ConvexHull(floor_point_cloud)
