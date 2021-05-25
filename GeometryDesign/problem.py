@@ -25,7 +25,7 @@ def min_height(point_cloud_1d: np.ndarray) -> np.ndarray:
     """
     Project point from floor along the z axis to the hull
     distance from the starting point to the projection point
-    find the smallest
+    find the smallest.
     """
     return 0
 
