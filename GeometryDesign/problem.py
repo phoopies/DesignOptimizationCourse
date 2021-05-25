@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 #Minimize
 def surface_area(point_cloud_1d: np.ndarray) -> np.ndarray:
     hull = form_hull_1d(point_cloud_1d[0])
-    return hull.area # - floor_area(point_cloud)
+    return hull.area - floor_area(point_cloud_1d)
 
 #Maximize
 def volume(point_cloud_1d: np.ndarray) -> np.ndarray:
@@ -32,8 +32,17 @@ def min_height(point_cloud_1d: np.ndarray) -> np.ndarray:
 #Maximize
 def floor_area(point_cloud_1d: np.ndarray) -> np.ndarray:
     # How to define floor area? Project to z axis?
-    hull = form_hull_1d(point_cloud_1d[0])
-    return 0
+    point_cloud = point_cloud_1d_to_3d(point_cloud_1d[0])
+    # point_cloud_xy = np.column_stack((point_cloud[:,0], point_cloud[:,1]))
+    lowest_z = np.min(point_cloud[:,2])
+    close_to_lowest_z = lambda z: np.abs(lowest_z - z) < 0.01 # Some small number
+    floor_point_cloud = np.array([[x,y] for x,y,z in point_cloud if close_to_lowest_z(z)])
+    print(floor_point_cloud)
+    if len(floor_point_cloud) <= 2: # TODO check that forms an area, i.e all points not in same line
+        return 0 # Area of a point or line is 0
+    floor_hull = ConvexHull(floor_point_cloud)
+    return floor_hull.area
+    
 
 def point_cloud_1d_to_3d(point_cloud_1d: np.ndarray):
     points_n = int(len(point_cloud_1d)/3)
@@ -87,7 +96,7 @@ obj3 = _ScalarObjective("min_height", min_height, maximize=True)
 obj4 = _ScalarObjective("floor_area", floor_area, maximize=True)
 
 # List of objectives for MOProblem class
-objectives = [obj1, obj2]
+objectives = [obj1, obj2, obj4]
 objectives_count = len(objectives)
 
 # Define maximun values for objective functions
