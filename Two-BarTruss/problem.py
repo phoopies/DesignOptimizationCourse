@@ -25,10 +25,11 @@ from desdeo_problem.Variable import variable_builder
 from desdeo_emo.EAs.RVEA import RVEA
 from desdeo_emo.EAs.NSGAIII import NSGAIII
 from desdeo_mcdm.interactive.ReferencePointMethod import ReferencePointMethod
-from desdeo_mcdm.utilities.solvers import payoff_table_method
+from desdeo_mcdm.utilities.solvers import payoff_table_method, solve_pareto_front_representation
 from scipy.optimize import differential_evolution
 from desdeo_tools.solver import ScalarMethod
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Maybe the load should be a constant assigned here and then change the objective funcions a little
 load = 66
@@ -127,25 +128,82 @@ Also if a constraint of form  A < obj1 < C is needed:
 One can declare 2 constraints for obj1, i guess
 """
 
-constraints = [con1, con3, con4]  # List of constraints for MOProblem class
+constraints = [con3, con4]  # List of constraints for MOProblem class
+
+# Define solver method, some defaults might have trouble with some of the differentials
+scipy_de_method = ScalarMethod(
+    lambda x, _, **y: differential_evolution(x, **y), method_args={"polish": False}, use_scipy=True
+)
 
 # Create the problem
 # This problem object can be passed to various different methods defined in DESDEO
 prob = MOProblem(objectives=objectives, variables=variables, constraints=constraints)
 print(prob.evaluate(initial_values))
 
-scipy_de_method = ScalarMethod(
-    lambda x, _, **y: differential_evolution(x, **y), method_args={"polish": False}, use_scipy=True
-)
-
 # Calculate ideal and nadir points
 ideal, nadir = payoff_table_method(prob, solver_method=scipy_de_method)
+print(f"Nadir: {nadir}\nIdeal: {ideal}")
 
 # Pass ideal and nadir to the problem object
 prob.ideal = ideal
 prob.nadir = nadir
 
-print(f"Nadir: {nadir}\nIdeal: {ideal}")
+from desdeo_tools.solver import ScalarMinimizer
+from desdeo_tools.scalarization import SimpleASF, Scalarizer
+
+def get_po_solution(ref_point: np.ndarray):
+    asf = SimpleASF(np.ones(ideal.shape))
+    if isinstance(prob, MOProblem):
+        scalarizer = Scalarizer(
+            lambda x: prob.evaluate(x).objectives,
+            asf,
+            scalarizer_args={"reference_point": np.atleast_2d(ref_point)},
+        )
+
+        if prob.n_of_constraints > 0:
+            _con_eval = lambda x: prob.evaluate(x).constraints.squeeze()
+        else:
+            _con_eval = None
+
+        solver = ScalarMinimizer(
+            scalarizer,
+            prob.get_variable_bounds(),
+            constraint_evaluator=_con_eval,
+            method=scipy_de_method,
+        )
+
+        res = solver.minimize(prob.get_variable_upper_bounds() / 2)
+        if res['success']:
+            return res["x"]
+
+# po_solutions = []
+# steps = 15
+# step = (nadir - ideal / steps)
+# for i in range(1, steps):
+#     po_solutions.append(get_po_solution(ideal + step * i))
+
+# po_solutions = np.unique(po_solutions, axis = 0)
+
+
+# # Plotting
+# labels = ["weight", "Stress", "Buckling", "Deflection"]
+# obj_values = [prob.evaluate_objectives(np.atleast_2d(po_solution))[0] for po_solution in po_solutions]
+# print(obj_values)
+# obj_values = np.hsplit(np.array(obj_values).squeeze(), objectives_count)
+# x = np.arange(len(obj_values[0]))  
+# width = 1/objectives_count - 0.05  # the width of the bars
+
+# fig, ax = plt.subplots()
+# rects = []
+# for i in range(objectives_count):
+#     rects.append(ax.bar(x+(width*i), np.concatenate(obj_values[i]), width, label=labels[i]))
+# ax.legend()
+# fig.tight_layout()
+
+plt.show()
+
+
+
 
 # NSGAIII, Uncomment below to see solve with NSGAIII
 evolver = NSGAIII(prob, n_iterations=10, n_gen_per_iter=100, population_size=100)
@@ -153,37 +211,22 @@ evolver = NSGAIII(prob, n_iterations=10, n_gen_per_iter=100, population_size=100
 plot, pref = evolver.requests()
 
 while evolver.continue_evolution():
-    print(evolver._iteration_counter)
+    print(f"step {evolver._iteration_counter}")
     evolver.iterate()
-
+print("evolution phase done")
 
 individuals = evolver.population.individuals
+individual = np.atleast_2d(individuals[0])
 
-individual = individuals[0]
-print(f"Some individual: {individual}")
-print(f"Objective values with above individual:\n"
-        f"Weight = {weight(individuals)}\n"
-        f"Stress = {stress(individuals[0])}\n"
-        f"Buckling stress = {buckling_stress(individuals)}\n"
-        f"Deflection = {deflection(individuals)}\n")
+po_sol = get_po_solution(prob.evaluate_objectives(individual))
+print(prob.evaluate_objectives(np.atleast_2d(po_sol)))
+# print(f"Some individual: {individual}")
+# print(f"Objective values with above individual:\n"
+#         f"Weight = {weight(individual)}\n"
+#         f"Stress = {stress(individual)}\n"
+#         f"Buckling stress = {buckling_stress(individual)}\n"
+#         f"Deflection = {deflection(individual)}\n")
 
-
-# Some 2D-plot
-# import plotly.graph_objects as go
-# layout = go.Layout(
-#     title="A graph of decision variables",
-#     xaxis=dict(
-#         title="Height"
-#     ),
-#     yaxis=dict(
-#         title="Diameter"
-#     ) ) 
-
-# fig1 = go.Figure(
-#     layout=layout,
-#     data=go.Scatter(x=individuals[:,0], y=individuals[:,1], mode="markers")
-# )
-# fig1.show()
 
 
 
@@ -216,6 +259,9 @@ print(f"Objective values with above individual:\n"
 #         f"Stress = {stress(individuals[0])}\n"
 #         f"Buckling stress = {buckling_stress(individuals[0])}\n"
 #         f"Deflection = {deflection(individuals[0])}\n")
+
+
+
 
 
 
@@ -254,6 +300,11 @@ print(f"Objective values with above individual:\n"
 
 # print(f"Decision vector = {final_sol}")
 # print(f"Objective vector = {obj_vector}")
+
+
+
+
+
 
 # NIMBUS
 # from desdeo_mcdm.interactive.NIMBUS import NIMBUS

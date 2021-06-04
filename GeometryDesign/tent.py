@@ -1,8 +1,9 @@
-from math import floor
 from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
 import numpy as np
 
+# TODO
+# some validation when constructing hull
 class Tent:
     _point_cloud: np.ndarray
     main_hull: ConvexHull
@@ -26,7 +27,7 @@ class Tent:
     
     def plot(self):
         ax = plt.axes(projection='3d')
-        x,y,z = np.split(point_cloud, 3, 1)
+        x,y,z = np.split(self._point_cloud, 3, 1)
         ax.scatter3D(x,y,z)
 
         #Plotting the hull
@@ -64,6 +65,18 @@ if __name__ == "__main__":
 
     #(0,0,0) - (1,1,1)
     point_cloud = np.random.rand(15,3)
+    point_cloud = np.array(
+        [
+            [0,0,0],
+            [1,1,0],
+            [0,1,0],
+            [1,0,0],
+            [0,0,1],
+            [1,1,1],
+            [0,1,1],
+            [1,0,1],
+        ]
+    )
 
     tent = Tent(point_cloud)
     print(f"Floor area: {tent.floor_area}\nSurface area: {tent.surface_area}\nVolume: { tent.volume}")
