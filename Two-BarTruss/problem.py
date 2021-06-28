@@ -26,10 +26,12 @@ from desdeo_emo.EAs.RVEA import RVEA
 from desdeo_emo.EAs.NSGAIII import NSGAIII
 from desdeo_mcdm.interactive.ReferencePointMethod import ReferencePointMethod
 from desdeo_mcdm.utilities.solvers import payoff_table_method, solve_pareto_front_representation
-from scipy.optimize import differential_evolution
+from scipy.linalg.basic import solve
+from scipy.optimize import differential_evolution, minimize
 from desdeo_tools.solver import ScalarMethod
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 # Maybe the load should be a constant assigned here and then change the objective funcions a little
 load = 66
@@ -97,9 +99,9 @@ objectives = [obj1, obj2, obj3, obj4]
 objectives_count = len(objectives)
 
 # Define maximun values for objective functions
-weight_max = 55
-stress_max = 100
-b_stress_max = 250
+weight_max = 150
+stress_max = 30
+b_stress_max = 150
 deflection_max = 1
 
 # Define constraint functions
@@ -128,11 +130,13 @@ Also if a constraint of form  A < obj1 < C is needed:
 One can declare 2 constraints for obj1, i guess
 """
 
-constraints = [con3, con4]  # List of constraints for MOProblem class
+constraints = [con1, con2, con3]  # List of constraints for MOProblem class
+
+savefile_name = "twobar__all__buck150_weight150_stress30"
 
 # Define solver method, some defaults might have trouble with some of the differentials
 scipy_de_method = ScalarMethod(
-    lambda x, _, **y: differential_evolution(x, **y), method_args={"polish": False}, use_scipy=True
+    lambda x, _, **y: minimize(x, **y, x0=initial_values), method_args={"method":"SLSQP"}, use_scipy=True
 )
 
 # Create the problem
@@ -148,33 +152,46 @@ print(f"Nadir: {nadir}\nIdeal: {ideal}")
 prob.ideal = ideal
 prob.nadir = nadir
 
-from desdeo_tools.solver import ScalarMinimizer
-from desdeo_tools.scalarization import SimpleASF, Scalarizer
+pfront_var, pfront_obj = solve_pareto_front_representation(prob, step = np.array([15, 25, 15, 1]), solver_method=scipy_de_method)
 
-def get_po_solution(ref_point: np.ndarray):
-    asf = SimpleASF(np.ones(ideal.shape))
-    if isinstance(prob, MOProblem):
-        scalarizer = Scalarizer(
-            lambda x: prob.evaluate(x).objectives,
-            asf,
-            scalarizer_args={"reference_point": np.atleast_2d(ref_point)},
-        )
+# mask1 = pfront_var.min(axis = 0) >= 0
+# mask2 = pfront_var.max(axis = 0) <= 1
+# mask = mask1 + mask2
+# print(mask)
+# print(pfront_var)
+# pfront_obj = pfront_obj[:,mask]
+# pfront_var = pfront_var[:,mask]
+# print(pfront_obj)
 
-        if prob.n_of_constraints > 0:
-            _con_eval = lambda x: prob.evaluate(x).constraints.squeeze()
-        else:
-            _con_eval = None
+np.savez(f"DataAndVisualization\{savefile_name}.npz", obj = pfront_obj, var = pfront_var, nadir = nadir, ideal = ideal)
 
-        solver = ScalarMinimizer(
-            scalarizer,
-            prob.get_variable_bounds(),
-            constraint_evaluator=_con_eval,
-            method=scipy_de_method,
-        )
+# from desdeo_tools.solver import ScalarMinimizer
+# from desdeo_tools.scalarization import SimpleASF, Scalarizer
 
-        res = solver.minimize(prob.get_variable_upper_bounds() / 2)
-        if res['success']:
-            return res["x"]
+# def get_po_solution(ref_point: np.ndarray):
+#     asf = SimpleASF(np.ones(ideal.shape))
+#     if isinstance(prob, MOProblem):
+#         scalarizer = Scalarizer(
+#             lambda x: prob.evaluate(x).objectives,
+#             asf,
+#             scalarizer_args={"reference_point": np.atleast_2d(ref_point)},
+#         )
+
+#         if prob.n_of_constraints > 0:
+#             _con_eval = lambda x: prob.evaluate(x).constraints.squeeze()
+#         else:
+#             _con_eval = None
+
+#         solver = ScalarMinimizer(
+#             scalarizer,
+#             prob.get_variable_bounds(),
+#             constraint_evaluator=_con_eval,
+#             method=scipy_de_method,
+#         )
+
+#         res = solver.minimize(prob.get_variable_upper_bounds() / 2)
+#         if res['success']:
+#             return res["x"]
 
 # po_solutions = []
 # steps = 15
@@ -200,26 +217,24 @@ def get_po_solution(ref_point: np.ndarray):
 # ax.legend()
 # fig.tight_layout()
 
-plt.show()
-
-
+# plt.show()
 
 
 # NSGAIII, Uncomment below to see solve with NSGAIII
-evolver = NSGAIII(prob, n_iterations=10, n_gen_per_iter=100, population_size=100)
+# evolver = NSGAIII(prob, n_iterations=10, n_gen_per_iter=100, population_size=100)
 
-plot, pref = evolver.requests()
+# plot, pref = evolver.requests()
 
-while evolver.continue_evolution():
-    print(f"step {evolver._iteration_counter}")
-    evolver.iterate()
-print("evolution phase done")
+# while evolver.continue_evolution():
+#     print(f"step {evolver._iteration_counter}")
+#     evolver.iterate()
+# print("evolution phase done")
 
-individuals = evolver.population.individuals
-individual = np.atleast_2d(individuals[0])
+# individuals = evolver.population.individuals
+# individual = np.atleast_2d(individuals[0])
 
-po_sol = get_po_solution(prob.evaluate_objectives(individual))
-print(prob.evaluate_objectives(np.atleast_2d(po_sol)))
+# po_sol = get_po_solution(prob.evaluate_objectives(individual))
+# print(prob.evaluate_objectives(np.atleast_2d(po_sol)))
 # print(f"Some individual: {individual}")
 # print(f"Objective values with above individual:\n"
 #         f"Weight = {weight(individual)}\n"

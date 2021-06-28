@@ -1,24 +1,28 @@
 from desdeo_problem.Constraint import ScalarConstraint
 from desdeo_problem.Problem import MOProblem
-from desdeo_problem.Objective import _ScalarObjective
+from desdeo_problem.Objective import VectorObjective, _ScalarObjective
 from desdeo_problem.Variable import variable_builder
 from desdeo_emo.EAs.RVEA import RVEA
 from desdeo_emo.EAs.NSGAIII import NSGAIII
 from desdeo_mcdm.interactive.NIMBUS import NIMBUS
+from desdeo_tools.scalarization.ASF import PointMethodASF
 import numpy as np
 from desdeo_mcdm.interactive.ReferencePointMethod import ReferencePointMethod
 from desdeo_mcdm.interactive.NautilusNavigator import NautilusNavigator
 from desdeo_mcdm.utilities import solve_pareto_front_representation
 from desdeo_mcdm.utilities.solvers import payoff_table_method
-from numpy.core.fromnumeric import nonzero
+from numpy.core.fromnumeric import nonzero, var
 from scipy.optimize import differential_evolution, minimize
 from desdeo_tools.solver import ScalarMethod
 from tent import Tent
 from desdeo_emo.EAs.RVEA import RVEA
 from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
-
-
+from desdeo_tools.solver import ScalarMinimizer
+import matplotlib.pyplot as plt
+from desdeo_tools.scalarization import SimpleASF, Scalarizer
+import pandas as pd
+import pandas.plotting as pdplt
 
 # Util functions
 def form_floor_hull(point_cloud: np.ndarray):
@@ -62,16 +66,18 @@ def plot_hull(point_cloud: np.ndarray, hull: ConvexHull):
 # Defining the objective functions
 #Minimize
 def surface_area(point_cloud_1d: np.ndarray) -> np.ndarray:
-    point_cloud_1d = np.atleast_2d(point_cloud_1d)
-    point_cloud = point_cloud_1d_to_3d(point_cloud_1d[0])
+    point_cloud_copy = np.copy(point_cloud_1d)
+    point_cloud_copy = np.atleast_2d(point_cloud_copy)
+    point_cloud = point_cloud_1d_to_3d(point_cloud_copy[0])
     tent = Tent(point_cloud)
     # hull = form_hull_1d(point_cloud_1d[0])
     return tent.surface_area
 
 #Maximize
 def volume(point_cloud_1d: np.ndarray) -> np.ndarray:
-    point_cloud_1d = np.atleast_2d(point_cloud_1d)
-    point_cloud = point_cloud_1d_to_3d(point_cloud_1d[0])
+    point_cloud_copy = np.copy(point_cloud_1d)
+    point_cloud_copy = np.atleast_2d(point_cloud_copy)
+    point_cloud = point_cloud_1d_to_3d(point_cloud_copy[0])
     tent = Tent(point_cloud)
     # hull = form_hull_1d(point_cloud_1d[0])
     return tent.volume
@@ -83,21 +89,23 @@ def min_height(point_cloud_1d: np.ndarray) -> np.ndarray:
     distance from the starting point to the projection point
     find the smallest
     """
-    point_cloud_1d = np.atleast_2d(point_cloud_1d)
-    point_cloud = point_cloud_1d_to_3d(point_cloud_1d[0])
+    point_cloud_copy = np.copy(point_cloud_1d)
+    point_cloud_copy = np.atleast_2d(point_cloud_copy)
+    point_cloud = point_cloud_1d_to_3d(point_cloud_copy[0])
     tent = Tent(point_cloud)
     point_cloud_z = point_cloud[:,2]
-    return np.min(point_cloud_z[np.nonzero(point_cloud_z)]) # :D
+    return np.min(point_cloud_z[np.nonzero(point_cloud_z)])
 
 #Maximize
 def floor_area(point_cloud_1d: np.ndarray) -> np.ndarray:
+    point_cloud_copy = np.copy(point_cloud_1d)
     # How to define floor area? Project to z axis?
-    point_cloud_1d = np.atleast_2d(point_cloud_1d)
-    point_cloud = point_cloud_1d_to_3d(point_cloud_1d[0])
+    point_cloud_copy = np.atleast_2d(point_cloud_copy)
+    point_cloud = point_cloud_1d_to_3d(point_cloud_copy[0])
     # point_cloud_xy = np.column_stack((point_cloud[:,0], point_cloud[:,1]))
     # When input points are 2-dimensional, this is the area of the convex hull.
     tent = Tent(point_cloud)
-    return tent.volume
+    return tent.floor_area
 
 # Define objectives
 obj1 = _ScalarObjective("surface_area", surface_area, maximize=False)
@@ -106,9 +114,8 @@ obj3 = _ScalarObjective("min_height", min_height, maximize=True)
 obj4 = _ScalarObjective("floor_area", floor_area, maximize=True)
 
 # List of objectives for MOProblem class
-objectives = [obj1, obj2]
+objectives = [obj1, obj2, obj4]
 objectives_count = len(objectives)
-
 
 
 # Defining (decision) variables
@@ -119,13 +126,15 @@ initial_values = scale_factor * (0.2 + (0.6 * np.random.rand(var_count, 3))) # r
 
 initial_values = np.concatenate(initial_values)
 var_names = [f"point {i}.{axis}" for i in range(var_count) for axis in ['x', 'y', 'z']] 
+# var_names = [f"z{i}" for i in range(var_count)]
 
 # set lower bounds for each variable
-eps = 0 #1.e-5 # make sure that decision variable values don't exceed bounds because floats
-lower_bounds = scale_factor * np.array([0 - eps] * var_count * 3)
+eps = 1.e-1 # make sure that decision variable values don't exceed bounds because floats
+lower_bounds = scale_factor * np.array([0-eps] * actual_var_count)
+# lower_bounds = scale_factor * np.array([[0, 0, 0] for _ in range(var_count)])
 
 # set upper bounds for each variable
-upper_bounds = scale_factor * np.array([1 + eps] * var_count * 3)
+upper_bounds = scale_factor * np.array([1+eps] * actual_var_count)
 
 # Create a list of Variables for MOProblem class
 variables = variable_builder(var_names, initial_values, lower_bounds, upper_bounds)
@@ -163,31 +172,80 @@ constraints = [con4]  # List of constraints for MOProblem class
 problem = MOProblem(objectives=objectives, variables=variables, constraints=constraints)
 
 # Calculate ideal and nadir points
-scipy_de_method = ScalarMethod(
-    lambda x, _, **y: differential_evolution(x, **y), method_args={"polish": False, }, use_scipy=True
-)
-
 #ideal, nadir = payoff_table_method(problem, solver_method=scipy_de_method)
-ideal = np.array([0., 1])
-nadir = np.array([5, 0])
+ideal = np.array([0., 1, 1])
+nadir = np.array([5, 0, 0])
 print(f"Nadir: {nadir}\nIdeal: {ideal}")
 
 # Pass ideal and nadir to the problem object
 problem.ideal = ideal
 problem.nadir = nadir
 
+scipy_de_method = ScalarMethod(
+    lambda x, _, **y: minimize(x, **y, x0=initial_values), method_args={"method":"SLSQP"}, use_scipy=True
+)
+
 print(problem.evaluate(initial_values))
 
-pof_variables, pof_objectives = solve_pareto_front_representation(problem, solver_method=scipy_de_method)
-print(f"Pareto front:\nVariables: {pof_variables}\nObjectives: {pof_objectives}")
+# Also dominated, should fix
+def get_po_solutions(problem, step = 0.3, method = None):
+    asf = PointMethodASF(problem.nadir, problem.ideal)
+    scalarizer = Scalarizer(
+        lambda x: problem.evaluate(x).objectives,
+        asf,
+        scalarizer_args={"reference_point": None},
+    )
 
-if len(pof_variables) > 0:
-    for vars in pof_variables:
-        t =  Tent(point_cloud_1d_to_3d(vars))
-        print (f"Area: {t.surface_area}\nVolume: {t.volume}\nFloorarea: {t.floor_area}")
-        t.plot()
-else:
-    print("No solutions found?")
+    solver = ScalarMinimizer(scalarizer, bounds= problem.get_variable_bounds() , method=method)
+
+    stacked = np.stack((problem.ideal, problem.nadir)).T
+    lower_slice_b, upper_slice_b = np.min(stacked, axis=1), np.max(stacked, axis=1)
+
+    slices = [slice(start, stop + eps, step) for (start, stop) in zip(lower_slice_b, upper_slice_b)]
+
+    z_mesh = np.mgrid[slices].reshape(len(problem.ideal), -1).T
+
+    p_front_objectives = np.zeros(z_mesh.shape)
+    p_front_variables = np.zeros((len(p_front_objectives), len(problem.get_variable_bounds().squeeze())))
+
+    for i, z in enumerate(z_mesh):
+        scalarizer._scalarizer_args = {"reference_point": z}
+        res = solver.minimize(None)
+
+        if not res["success"]:
+            print("Non successfull optimization")
+            p_front_objectives[i] = np.nan
+            p_front_variables[i] = np.nan
+            continue
+
+        if np.any(res['x'] < 0):
+            p_front_objectives[i] = np.nan
+            p_front_variables[i] = np.nan
+            continue
+
+        f_i = problem.evaluate(res["x"]).objectives
+        p_front_objectives[i] = f_i
+        p_front_variables[i] = res["x"]
+
+    return (
+        p_front_variables[~np.all(np.isnan(p_front_variables), axis=1)],
+        p_front_objectives[~np.all(np.isnan(p_front_objectives), axis=1)],
+    )
+
+savefile_name = "gd_surface_volume_floor__floor"
+p_front_var, p_front_obj = solve_pareto_front_representation(problem, step = 0.05, solver_method = scipy_de_method)
+np.savez(f"DataAndVisualization/{savefile_name}.npz", obj = p_front_obj, var = p_front_var)
+
+# pof_variables, pof_objectives = solve_pareto_front_representation(problem, step = 0.1, solver_method=scipy_de_method2)
+# print(f"Pareto front:\nVariables:\n{pof_variables}\nObjectives:\n{pof_objectives}")
+
+# if len(pof_variables) > 0:
+#     for vars in pof_variables:
+#         t =  Tent(point_cloud_1d_to_3d(vars))
+#         print (f"Area: {t.surface_area}\nVolume: {t.volume}\nFloorarea: {t.floor_area}")
+#         t.plot()
+# else:
+#     print("No solutions found?")
 
 
 
