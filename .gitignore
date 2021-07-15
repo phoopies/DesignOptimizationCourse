@@ -10,7 +10,7 @@ __pycache__/
 *.so
 
 # Numpy save files
-*.npz
+*twobar__all__none.npz
 
 # Distribution / packaging
 .Python
