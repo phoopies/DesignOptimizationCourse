@@ -81,11 +81,13 @@ def onpick(event, var, obj, multi: bool = False):
     ind = event.ind[0]
     point = [xdata[ind], ydata[ind]]
     if multi: point.append(zdata[ind])
-    print('onpick point:', point)
+    print('Objectives:', point)
     p = var[np.where(np.all(point == obj, axis=1))]
     p = p[0]
+    print('Decision variable:', p)
     plt.close()
     t = Tent(point_cloud_1d_to_3d(p))
+    print(t.surface_area, t.volume)
     t.plot()
 
 def visualize(obj, var, axis_names = None, axis_ranges = None):

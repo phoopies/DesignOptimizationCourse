@@ -35,10 +35,13 @@ import matplotlib.pyplot as plt
 
 
 
-def create_problem(load = 66, obj_mask = [True]*4, constraints = [None,None]*4, method = None):
-    if constraints.shape[0] != 4 or constraints.shape[1] != 2:
-        raise("invalid constaints")
-
+def create_problem(load = 66, obj_mask = [True]*4, constraints = None, method = None):
+    if constraints is not None:
+        if constraints.shape[0] != 4 or constraints.shape[1] != 2:
+            raise("invalid constraints")
+    else:
+        constraints = np.array([None] * 8).reshape((4,2))
+    
     if type(obj_mask) is not np.ndarray:
         obj_mask = np.array(obj_mask)
     
@@ -84,7 +87,6 @@ def create_problem(load = 66, obj_mask = [True]*4, constraints = [None,None]*4, 
 
     # set upper bounds for each variable
     upper_bounds = np.array([60.0, 5.0, 1.0, 100.0, 40000., 0.5])
-    # TODO If one wishes to fix a variable to a certain value (constant value)
 
     # Trying to minimize everything so no need to define minimize array
 
@@ -100,7 +102,7 @@ def create_problem(load = 66, obj_mask = [True]*4, constraints = [None,None]*4, 
     # In this example we are minimizing all the objectives subject to buckling stress < 250 and deflection < 1
 
     # List of objectives for MOProblem class
-    objectives = [obj1, obj2, obj3, obj4]
+    objectives = np.array([obj1, obj2, obj3, obj4])[obj_mask]
     objectives_count = len(objectives)
 
     # Define constraint functions
@@ -116,9 +118,16 @@ def create_problem(load = 66, obj_mask = [True]*4, constraints = [None,None]*4, 
             con = utils.constraint_builder(obj_f[i], objectives_count, var_count, upper, False, f"c{i}u")
             cons.append(con)
 
+
     # Create the problem
     # This problem object can be passed to various different methods defined in DESDEO
     prob = MOProblem(objectives=objectives, variables=variables, constraints=cons)
+
+    scipy_de_method = ScalarMethod(
+        lambda x, _, **y: minimize(x, **y, x0 = np.random.rand(prob.n_of_variables)),
+        method_args={"method":"SLSQP"},
+        use_scipy=True
+    )
 
     print("calculating ideal and nadir points")
     # Calculate ideal and nadir points
@@ -129,7 +138,7 @@ def create_problem(load = 66, obj_mask = [True]*4, constraints = [None,None]*4, 
     prob.ideal = ideal
     prob.nadir = nadir
 
-    return prob
+    return prob, scipy_de_method
 
 # from desdeo_tools.solver import ScalarMinimizer
 # from desdeo_tools.scalarization import SimpleASF, Scalarizer
