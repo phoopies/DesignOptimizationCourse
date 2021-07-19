@@ -1,10 +1,10 @@
 import numpy as np
-from desdeo_problem.Constraint import ScalarConstraint
+from desdeo_problem.problem.Constraint import ScalarConstraint
 from desdeo_tools.solver import ScalarMethod
 from scipy.optimize import minimize
-from desdeo_problem.Objective import  _ScalarObjective
-from desdeo_problem.Problem import MOProblem
-from desdeo_problem.Variable import variable_builder
+from desdeo_problem.problem.Objective import  _ScalarObjective
+from desdeo_problem.problem.Problem import MOProblem
+from desdeo_problem.problem.Variable import variable_builder
 from scipy.spatial.qhull import ConvexHull
 
 from modules.GeometryDesign.tent import Tent
@@ -163,5 +163,5 @@ def create_problem(var_count = 12, obj_mask = [True]*4, constraints = None, pfro
 def create_problem_constant_floor(var_count = 12, constraints = None, pfront = False):
     objective_mask = [True, True, False, False]
     if constraints is not None:
-        constraints = np.vstack((constraints, np.array([[None] * 4]).reshape((2,2))))
+        constraints = np.vstack((constraints, np.array([[None] * 2]).reshape((1,2))))
     return create_problem(var_count, objective_mask, constraints, pfront, True)

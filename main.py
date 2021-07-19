@@ -56,7 +56,7 @@ constraints_gd = np.array([
 
 # How many 3d points should the hull be formed of
 # The more you have the longer it takes to calculate the Pareto front
-# less than 5 might cause issues in constructing the hull.
+# The less points one has the more likely it is that constructing the convex hull fails
 variable_count_gd = 12
 
 # Create the problem, save the solver method for solve_pareto.... function. 
@@ -77,19 +77,22 @@ problem_gd, method_gd = gd_create(variable_count_gd , obj_gd, constraints_gd, pf
 
 # Set the constraint for surface area and volume
 constraints_gd_floor = np.array([
-    [None, None], 
-    [None, None]
+    [3, None], 
+    [None, None],
+    [.35, .8]
 ])
 
 # Create a problem for calculating pareto front with 10 + 4 3d Points without constraints
-# The less points one has the more likely it is that constructing the convex hull fails
 problem_gd_floor, method_gd_floor = gd_create_floor(10, constraints_gd_floor, pfront=True)
-# step_sizes = np.array([.35, .1])
+step_sizes = np.array([.5, .35])
 
-# var, obj = solve_pareto_front_representation(problem_gd_floor, step = step_sizes, solver_method = method_gd_floor)
-# save("gd_constant_floor__None1", obj, var, problem_gd_floor.nadir, problem_gd_floor.ideal)
+var, obj = solve_pareto_front_representation(problem_gd_floor, step = step_sizes, solver_method = method_gd_floor)
+for (v,o) in zip(var, obj):
+    print(problem_gd_floor.evaluate_constraint_values(v,o))
 
-# interactive_scatter_gd(obj, var, ["Surface_area", "Volume"])
+# save("gd_constant_floor__min_height03", obj, var, problem_gd_floor.nadir, problem_gd_floor.ideal)
+
+interactive_scatter_gd(obj, var, ["Surface_area", "Volume"])
 
 
 
@@ -107,9 +110,9 @@ constraints_tb = np.array([
     [None, None],
 ])
 
-load_tb = 65
-tb_problem, solver_method = tb_create(load_tb, obj_tb, constraints_tb)
-var, obj = solve_pareto_front_representation(tb_problem, 5.0, solver_method = solver_method)
+# load_tb = 65
+# tb_problem, solver_method = tb_create(load_tb, obj_tb, constraints_tb)
+# var, obj = solve_pareto_front_representation(tb_problem, 5.0, solver_method = solver_method)
 # save("ex2", obj, var, tb_problem.nadir, tb_problem.ideal)
 
 # END OF EXAMPLE
@@ -132,7 +135,7 @@ axis_names_gd = ["Surface area", "Volume", "Floor area"]
 axis_ranges_gd = np.stack((nadir, ideal), axis = 1)
 
 # For gd problems with 2 or 3d you can use the interactive plot:
-interactive_scatter_gd(obj, var, axis_names_gd, axis_ranges_gd)
+# interactive_scatter_gd(obj, var, axis_names_gd, axis_ranges_gd)
 
 # Load a 4d solution
 obj, var, nadir, ideal = load("gd_tent__all__none")

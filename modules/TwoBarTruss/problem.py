@@ -19,10 +19,10 @@ P load (1000 lbs)
 """
 
 from modules import utils
-from desdeo_problem.Constraint import ScalarConstraint
-from desdeo_problem.Problem import MOProblem
-from desdeo_problem.Objective import _ScalarObjective
-from desdeo_problem.Variable import variable_builder
+from desdeo_problem.problem.Constraint import ScalarConstraint
+from desdeo_problem.problem.Problem import MOProblem
+from desdeo_problem.problem.Objective import _ScalarObjective
+from desdeo_problem.problem.Variable import variable_builder
 from desdeo_emo.EAs.RVEA import RVEA
 from desdeo_emo.EAs.NSGAIII import NSGAIII
 from desdeo_mcdm.interactive.ReferencePointMethod import ReferencePointMethod
