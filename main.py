@@ -14,9 +14,8 @@ from modules.TwoBarTruss.problem import create_problem as tb_create
 from desdeo_mcdm.utilities import solve_pareto_front_representation
 import numpy as np
 
-# I AM NOT SURE IF THE CONSTRAINTS ARE CURRENTLY WORKING
-# WILL BE LOOKING INTO THIS SOON
-# ALSO I MODIFIED MIN HEIGHT FUNCTION AND I STILL NEED TO VERIFY IT WORKS AS IT SHOULD
+# Even though we have constraints and they work as documented, we still get
+# (alot of) values that violate the constraints
 
 # You can create the problem you wish with desired values THEN
 # you either calculate the pareto front using the solve_pareto_front_representation function
@@ -40,7 +39,7 @@ import numpy as np
 # Which objectives do you wish to optimize
 # surface area, volume, min height and floor area
 obj_gd = np.array([
-    True, True, False, True,
+    True, True, True, False,
 ])
 
 
@@ -48,10 +47,10 @@ obj_gd = np.array([
 # If no constraint then set it to None
 # Each row represents a objective function in the same order as in obj_gd 
 constraints_gd = np.array([
-    [1, 5],
-    [0.5, 1], 
     [None, None],
-    [0.75, None],
+    [None, None],
+    [None, None],
+    [None, None],
 ])
 
 # How many 3d points should the hull be formed of
@@ -59,27 +58,24 @@ constraints_gd = np.array([
 # The less points one has the more likely it is that constructing the convex hull fails
 variable_count_gd = 12
 
-# Create the problem, save the solver method for solve_pareto.... function. 
+# Create the problem, save the solver method for solve_pareto_front method 
 # Remember to set pfront to True if wanting to solve the pfront
 problem_gd, method_gd = gd_create(variable_count_gd , obj_gd, constraints_gd, pfront = True)
 
-
-
 # Solve the pareto front representation, this might take a long time 
-# var, obj = solve_pareto_front_representation(problem_gd, np.array([1, 0.5, 0.5]), solver_method= method_gd)
-# save the values if you wish, make sure to change the name "ex1" to something better
-# save("ex1", obj, var, problem_gd.nadir, problem_gd.ideal)
-# interactive_scatter_gd(obj, var)
+var, obj = solve_pareto_front_representation(problem_gd, np.array([0.4, 0.15, 0.15]), solver_method= method_gd)
+# save the values if you wish, make sure to change the name
+save("gd3", obj, var, problem_gd.nadir, problem_gd.ideal)
 
 
 # Geometry design with constant/predefined floor with area of 1
 # This is a 2 dimension problem, only optimizing surface area and volume
 
-# Set the constraint for surface area and volume
+# Set the constraint for surface area, volume and min height
 constraints_gd_floor = np.array([
     [3, None], 
-    [None, None],
-    [.35, .8]
+    [None, .5],
+    [None, None]
 ])
 
 # Create a problem for calculating pareto front with 10 + 4 3d Points without constraints
@@ -87,19 +83,17 @@ problem_gd_floor, method_gd_floor = gd_create_floor(10, constraints_gd_floor, pf
 step_sizes = np.array([.5, .35])
 
 var, obj = solve_pareto_front_representation(problem_gd_floor, step = step_sizes, solver_method = method_gd_floor)
-for (v,o) in zip(var, obj):
-    print(problem_gd_floor.evaluate_constraint_values(v,o))
 
-# save("gd_constant_floor__min_height03", obj, var, problem_gd_floor.nadir, problem_gd_floor.ideal)
+save("gdf5", obj, var, problem_gd_floor.nadir, problem_gd_floor.ideal)
 
-interactive_scatter_gd(obj, var, ["Surface_area", "Volume"])
+# interactive_scatter_gd(obj, var, ["Surface_area", "Volume"])
 
 
 
 # two bar truss problem
 # weight, stress, buckling stress and deflection
 obj_tb = np.array([
-    True, True, True, True,
+    False, True, True, True,
 ])
 
 # Constraints
@@ -110,10 +104,12 @@ constraints_tb = np.array([
     [None, None],
 ])
 
-# load_tb = 65
-# tb_problem, solver_method = tb_create(load_tb, obj_tb, constraints_tb)
-# var, obj = solve_pareto_front_representation(tb_problem, 5.0, solver_method = solver_method)
-# save("ex2", obj, var, tb_problem.nadir, tb_problem.ideal)
+steps = np.array([1, 1, 15, 2])[np.where(obj_tb == True)]
+
+load_tb = 65
+tb_problem, solver_method = tb_create(load_tb, obj_tb, constraints_tb)
+var, obj = solve_pareto_front_representation(tb_problem, steps, solver_method = solver_method)
+save("tb3", obj, var, tb_problem.nadir, tb_problem.ideal)
 
 # END OF EXAMPLE
 
@@ -122,7 +118,7 @@ constraints_tb = np.array([
 
 # Load solution or solve yourself
 # We're loading a presolved solution. More info on these WILL be found on the DataAndVisualization folder.
-obj, var, nadir, ideal = load("gd_surface_volume_floor__none")
+obj, var, nadir, ideal = load("gd1")
 
 # I guess this part could be before saving the values. Well this can be changed later on
 obj = abs(obj) # Make sure all values are positive as some of the objectives were flipped.
@@ -138,13 +134,13 @@ axis_ranges_gd = np.stack((nadir, ideal), axis = 1)
 # interactive_scatter_gd(obj, var, axis_names_gd, axis_ranges_gd)
 
 # Load a 4d solution
-obj, var, nadir, ideal = load("gd_tent__all__none")
+obj, var, nadir, ideal = load("tb1")
 # for >3 dimension use the parallel plot
 # parallel(obj) # TODO axis names
 
 
 # Load a constant floor gd problem and plot it with interactive plot
-obj, var, nadir, ideal = load("gd_constant_floor__None1")
+obj, var, nadir, ideal = load("gdf1")
 interactive_scatter_gd(obj, var, ["Surface", "Volume"])
 
 # END OF EXAMPLE

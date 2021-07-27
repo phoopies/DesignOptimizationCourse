@@ -1,11 +1,7 @@
-from typing import Union
 from desdeo_problem.problem.Constraint import ScalarConstraint
-from desdeo_problem.problem.Problem import MOProblem
 import numpy as np
-from numpy.core.records import array
 from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
-from desdeo_problem.problem.Objective import _ScalarObjective
 
 # Util functions
 def form_floor_hull(point_cloud: np.ndarray):
