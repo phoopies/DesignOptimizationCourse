@@ -26,3 +26,7 @@ Examples of both scatter plots and parallel plots can be found from the files
 | visualizeTwoBarTruss.py                  | Visualizing the two bar truss problem |
 | visualizeGeometryProblem.py              | Visualizing the default geometry design problem |
 | visualizeFloorGeometryProblem.py         | Visualizing the geometry design problem with constant floor with interactive scatter plot|
+
+
+### Making tents
+The tentExample.py file has a few examples on constructing Tents and how to use them. Also a few mentions on some caveats.
