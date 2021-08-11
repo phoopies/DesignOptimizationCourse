@@ -25,4 +25,3 @@
 | ------------- | -------------       |
 | tb1           | No constraints      |
 | tb2           | Only weight and stress. No constraints      |
-| tb3           | Only stress, buckling stress and deflection. No constraints      |

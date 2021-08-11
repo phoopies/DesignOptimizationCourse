@@ -1,9 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-import pandas.plotting as pdplt
 from plotly.express import parallel_coordinates
-from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
 import numpy as np
 from modules.GeometryDesign.tent import Tent
@@ -16,8 +13,11 @@ def point_cloud_1d_to_3d(point_cloud_1d: np.ndarray):
     point_cloud_3d = point_cloud_1d.reshape(points_n, 3)
     return point_cloud_3d
 
-def plot_parallel(df):
-    fig = parallel_coordinates(df)
+def plot_parallel(obj, axis_names = None):
+    sample = obj
+    if obj.shape[0] > 1000: 
+        sample = obj[np.random.choice(obj.shape[0], 1000, replace=False)]
+    fig = parallel_coordinates(sample, labels=axis_names)
     fig.show()
 
 def plot_scatter_clickable(obj, var, axis_names = None, axis_ranges = None):
@@ -49,7 +49,7 @@ def plot_scatter_clickable(obj, var, axis_names = None, axis_ranges = None):
             plt.zlim(axis_ranges[2])
     plt.show()
 
-def plot_scatter(df, axis_names = None, axis_ranges = None):
+def plot_scatter(df, axis_names = None):
     k = df.shape[1]
     fig, ax = plt.subplots()
     ax.set_title("Pareto front")
@@ -85,18 +85,18 @@ def onpick(event, var, obj, multi: bool = False):
     p = var[np.where(np.all(point == obj, axis=1))]
     p = p[0]
     print('Decision variable:', p)
-    plt.close()
+    # plt.close()
     t = Tent(point_cloud_1d_to_3d(p))
     print(t.surface_area, t.volume)
     t.plot()
 
-def visualize(obj, var, axis_names = None, axis_ranges = None):
+def visualize(obj, var, axis_names = None):
     global exit_program
     exit_program = False
     try:
         while True:
             if not exit_program:
-                plot_scatter_clickable(obj, var, axis_names, axis_ranges)
+                plot_scatter_clickable(obj, var, axis_names)
             else: break
     except KeyboardInterrupt:
         print("OK")

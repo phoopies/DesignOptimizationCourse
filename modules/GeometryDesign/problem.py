@@ -18,23 +18,30 @@ def make_floor(p):
     return p
 
 # Defining the objective functions
+
 #Minimize
 def surface_area(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
     point_cloud_1d = np.atleast_2d(point_cloud_1d)
-    if constant_floor: point_cloud_1d[0,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
     point_cloud_copy = np.copy(point_cloud_1d)
-    point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy[0])
-    t = Tent(point_cloud)
-    return t.surface_area
+    if constant_floor: point_cloud_copy[:,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
+    point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy)
+    ans = np.zeros(point_cloud.shape[0])
+    for i, cloud in enumerate(point_cloud):
+        t = Tent(cloud)
+        ans[i] = t.surface_area
+    return ans
 
 #Maximize
 def volume(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
     point_cloud_1d = np.atleast_2d(point_cloud_1d)
-    if constant_floor: point_cloud_1d[0,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
     point_cloud_copy = np.copy(point_cloud_1d)
+    if constant_floor: point_cloud_copy[:,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
     point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy[0])
-    t = Tent(point_cloud)
-    return t.volume
+    ans = np.zeros(point_cloud.shape[0])
+    for i, cloud in enumerate(point_cloud):
+        t = Tent(cloud)
+        ans[i] = t.volume
+    return ans
 
 #Maximize
 def min_height(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
@@ -46,16 +53,22 @@ def min_height(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
     point_cloud_1d = np.atleast_2d(point_cloud_1d)
     point_cloud_copy = np.copy(point_cloud_1d)
     point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy[0])
-    t = Tent(point_cloud)
-    return t.min_height
+    ans = np.zeros(point_cloud.shape[0])
+    for i, cloud in enumerate(point_cloud):
+        t = Tent(cloud)
+        ans[i] = t.min_height
+    return ans
 
 #Maximize
 def floor_area(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
     point_cloud_1d = np.atleast_2d(point_cloud_1d)
     point_cloud_copy = np.copy(point_cloud_1d)
     point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy[0])
-    t = Tent(point_cloud)
-    return t.floor_area
+    ans = np.zeros(point_cloud.shape[0])
+    for i, cloud in enumerate(point_cloud):
+        t = Tent(cloud)
+        ans[i] = t.floor_area
+    return ans
 
 
 def create_problem(var_count = 12, obj_mask = [True]*4, constraints = None, pfront = False, constant_floor = False):
@@ -105,9 +118,7 @@ def create_problem(var_count = 12, obj_mask = [True]*4, constraints = None, pfro
 
     actual_var_count = var_count * 3
     scale_factor = 1
-    initial_values = scale_factor * (0.1 + (0.8 * np.random.rand(var_count, 3))) # random points
-
-    initial_values = np.concatenate(initial_values)
+    initial_values = scale_factor * (0.1 + (0.8 * np.random.rand(3 * var_count))) # random points
     var_names = [f"point {i}.{axis}" for i in range(var_count) for axis in ['x', 'y', 'z']] 
     # var_names = [f"z{i}" for i in range(var_count)]
 

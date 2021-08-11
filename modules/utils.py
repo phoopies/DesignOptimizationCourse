@@ -13,8 +13,9 @@ def form_floor_hull(point_cloud: np.ndarray):
     return ConvexHull(floor_point_cloud)
 
 def point_cloud_1d_to_3d(point_cloud_1d: np.ndarray):
-    points_n = int(len(point_cloud_1d)/3)
-    point_cloud_3d = point_cloud_1d.reshape(points_n, 3)
+    point_cloud_1d = np.atleast_2d(point_cloud_1d)
+    points_n = int(point_cloud_1d.shape[1]/3)
+    point_cloud_3d = point_cloud_1d.reshape(point_cloud_1d.shape[0], points_n, 3)
     return point_cloud_3d
 
 def form_hull_1d(point_cloud_1d: np.ndarray):
@@ -64,5 +65,19 @@ def load(name):
 # if the constraint is adhered to, and a negative, if the constraint is breached.
 # """
 def constraint_builder(f, n_obj, n_var, bound, is_lower_bound = True, name= "c1"):
-    c = lambda xs, ys: f(xs) - bound if is_lower_bound else bound - f(xs) 
+    c = lambda xs, _ys: f(xs) - bound if is_lower_bound else bound - f(xs) 
     return ScalarConstraint(name, n_var, n_obj, c)
+
+def remove_xy_duplicates_w_lowest_z(arr):
+ 
+    t = np.unique(arr[:,:2], axis = 0)
+    t = np.append(t, np.zeros((t.shape[0], 1)), axis = 1)
+    if t.shape[0] == arr.shape[0]: # All copied, so no duplicates
+        return arr
+
+    # some duplicates, get the ones with lowest z value
+    for row in t:
+        dupl = arr[np.all(row[:2] == arr[:,:2], axis = -1)] # Get the ones with same x y values
+        row[2] = np.min(dupl[:,2]) # Set the z value to the lowest of z value of the rows with same x, y values
+         
+    return t

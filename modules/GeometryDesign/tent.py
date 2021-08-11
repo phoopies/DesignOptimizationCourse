@@ -3,14 +3,19 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 from scipy.spatial.qhull import QhullError
+from modules.utils import remove_xy_duplicates_w_lowest_z
 
 
 class Tent:
     _point_cloud: np.ndarray
     main_hull: ConvexHull
     floor_hull: ConvexHull
+    _is_offset: bool
 
     def __init__(self, point_cloud) -> None:
+        # if point_cloud.shape[0] <= 3: 
+        #     raise Exception(f"Provide at least 3 points, provided {point_cloud.shape[0]}")
+        self._is_offset = False
         self._point_cloud = point_cloud
         self.make_hull()
 
@@ -62,28 +67,37 @@ class Tent:
         plt.show()
 
     def make_floor(self):
-        point_cloud_2d = np.delete(self._point_cloud,2,1) # Delete z axis
+        temp = remove_xy_duplicates_w_lowest_z(self._point_cloud) # If duplicates within x,y axis get the ones with lowest z
+        point_cloud_2d = np.delete(temp,2,1) # Delete z axis, so we get a 2d convex hull
         floor_hull = ConvexHull(point_cloud_2d) # Make the 2d hull
         floor_corners = np.unique(floor_hull.simplices)
-        self._point_cloud[floor_corners, 2] = 0
+        self._point_cloud[floor_corners, 2] = 0 # Project z axis to 0 for the floor
         self.floor_hull = floor_hull
     
-    def make_hull(self):
-        self.make_floor()
+    def make_hull(self, tries = 10):   
+        if tries == 0:
+            raise Exception("failed to construct the hull")
         try:
+            self.make_floor()
             hull = ConvexHull(self._point_cloud)
         except QhullError:
             print("Failed to construct the hull, offsetting points")
-            print("failed point cloud: ", self._point_cloud)
             self.offset_points()
-            return self.make_hull() # Try again with offset points
+            self._is_offset = True
+            return self.make_hull(tries - 1) # Try again with offset points
+        except KeyboardInterrupt:
+            print("Stopping")
+            exit()
+        
+        if self._is_offset:
+            print(f"The point cloud after offsets:\n{self._point_cloud}")
         self.main_hull = hull
     
     # TODO make sure that doesn't go over bounds
     def offset_points(self): 
         eps = 1e-04
         sh = self._point_cloud.shape
-        self._point_cloud = self._point_cloud + np.random.rand(sh) * eps 
+        self._point_cloud = self._point_cloud + np.random.rand(sh[0], sh[1]) * eps 
 
 # TODO REMOVE
 # def floor_hull(point_cloud) -> ConvexHull:
@@ -121,7 +135,7 @@ class Tent:
 if __name__ == "__main__":
 
     #(0,0,0) - (1,1,1)
-    point_cloud = np.random.rand(15,3)
+    point_cloud = np.random.rand(25,3)
     point_cloud = np.array(
         [
             [0,0,0],
