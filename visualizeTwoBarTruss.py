@@ -31,7 +31,7 @@ scatter(obj, axis_names)
 # You can choose an axis range to highlight solutions that fall in that range interactively
 
 # Load the problem
-obj2, var2, nadir2, ideal2 = load("tb1")
+obj2, var2, nadir2, ideal2 = load("tbExample1")
 
 # Set axis names
 axis_names = ["weight", "stress", "buckling stress", "deflection"]

@@ -22,8 +22,9 @@ def make_floor(p):
 #Minimize
 def surface_area(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
     point_cloud_1d = np.atleast_2d(point_cloud_1d)
+    if constant_floor:  point_cloud_1d[:,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
+    
     point_cloud_copy = np.copy(point_cloud_1d)
-    if constant_floor: point_cloud_copy[:,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
     point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy)
     ans = np.zeros(point_cloud.shape[0])
     for i, cloud in enumerate(point_cloud):
@@ -34,8 +35,9 @@ def surface_area(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray
 #Maximize
 def volume(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
     point_cloud_1d = np.atleast_2d(point_cloud_1d)
+    if constant_floor:  point_cloud_1d[:,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
+
     point_cloud_copy = np.copy(point_cloud_1d)
-    if constant_floor: point_cloud_copy[:,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
     point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy[0])
     ans = np.zeros(point_cloud.shape[0])
     for i, cloud in enumerate(point_cloud):
@@ -51,6 +53,8 @@ def min_height(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
     find the smallest
     """
     point_cloud_1d = np.atleast_2d(point_cloud_1d)
+    if constant_floor:  point_cloud_1d[:,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
+
     point_cloud_copy = np.copy(point_cloud_1d)
     point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy[0])
     ans = np.zeros(point_cloud.shape[0])
@@ -62,6 +66,8 @@ def min_height(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
 #Maximize
 def floor_area(point_cloud_1d: np.ndarray, constant_floor=False) -> np.ndarray:
     point_cloud_1d = np.atleast_2d(point_cloud_1d)
+    if constant_floor:  point_cloud_1d[:,-12:] = [0,0,0, 1,0,0, 0,1,0, 1,1,0]
+
     point_cloud_copy = np.copy(point_cloud_1d)
     point_cloud = utils.point_cloud_1d_to_3d(point_cloud_copy[0])
     ans = np.zeros(point_cloud.shape[0])
@@ -139,10 +145,10 @@ def create_problem(var_count = 12, obj_mask = [True]*4, constraints = None, pfro
     for i in range(4):
         lower, upper = constraints[i]
         if lower is not None:
-            con = utils.constraint_builder(obj_f[i], objectives_count, actual_var_count, lower, True, f"c{i}l")
+            con = utils.constraint_builder(lambda xs: obj_f[i](xs,constant_floor), objectives_count, actual_var_count, lower, True, f"c{i}l")
             cons.append(con)
         if upper is not None:
-            con = utils.constraint_builder(obj_f[i], objectives_count, actual_var_count, upper, False, f"c{i}u")
+            con = utils.constraint_builder(lambda xs: obj_f[i](xs,constant_floor), objectives_count, actual_var_count, upper, False, f"c{i}u")
             cons.append(con)
 
 

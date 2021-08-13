@@ -21,7 +21,7 @@ obj = abs(obj)
 axis_names = ["Surface area", "Volume", "Min height", "Floor area"]
 
 # As this is a 4d solution we'll have to use a parallel plot:
-parallel(obj, axis_names)
+# parallel(obj, axis_names)
 
 
 # Geometry design problems supports 2 and 3 dimensional interactive scatter plots:
@@ -29,7 +29,7 @@ parallel(obj, axis_names)
 # => close the tent plot => back to objectives plot
 
 # Load a 3d problem
-obj, var, _nadir, _ideal = load("gd2")
+obj, var, _nadir, _ideal = load("gdExample1")
 obj = abs(obj)
 axis_names = ["Surface area", "Volume", "floor area"]
 

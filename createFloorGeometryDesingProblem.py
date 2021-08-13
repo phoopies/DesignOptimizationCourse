@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore") # ignore warnings :)
 constraints = np.array([
     [0.2, None], # Surface area > 0.2
     [.5, .8], # .5 < volume < .8. Even though we're not optimizing volume, we can set a constraint on it  
-    [None, None], # No constraint on min height
+    [.4, None], # Min height > 0.4
 ])
 
 # How many 3d points should the hull be formed of
@@ -41,9 +41,9 @@ problem, method = create_problem(variable_count, constraints, pfront = True)
 # The method takes the problem instance and a step size array
 
 # The method will create reference points from nadir to ideal with these step sizes
-# in this case : ref points = [[5,0], [4.5, 0], [4, 0] ... [5, 0.2] ... [0, 1]]
+# in this case : ref points = [[5,0], [4.5, 0], [4, 0] ... [5, 0.2], [4.8, 0.2] ... [0, 1]]
 # large step sizes => less solutions but faster calculation
-step_sizes = np.array([.5, .2])
+step_sizes = np.array([1, .5])
 
 # The method returns the decision vectors and corresponding objective vectors
 var, obj = solve_pareto_front_representation(problem, step_sizes, solver_method= method)

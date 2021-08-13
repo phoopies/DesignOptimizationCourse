@@ -8,7 +8,7 @@ from modules.utils import load
 # Visualizing the geometry design problem with constant floor
 
 # First load the solution. For more details on on the solution check the readme file in modules/DataAndVisualization
-obj, var, nadir, ideal = load("gdf1")
+obj, var, nadir, ideal = load("gdcExample1")
 
 # You can ignore this part
 # Make sure all values are positive as some of the objectives may be flipped

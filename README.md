@@ -8,6 +8,7 @@ Information on precalculated solutions can be found from [HERE](modules/DataAndV
 ### Creating the problems 
 One can use these files to create DESDEOs MOProblem instances of two bar truss problem or either one of the geometry design problem.
 You can find examples on creating the problem from the file itself. 
+The 'Non successful optimization' log can be ignored.
 
 | file name                                | Details             |
 | -------------                            | -------------       |

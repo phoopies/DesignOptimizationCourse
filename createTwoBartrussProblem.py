@@ -3,7 +3,7 @@ from modules.utils import save
 from modules.TwoBarTruss.problem import create_problem
 import numpy as np
 import warnings
-warnings.filterwarnings("ignore") # ignore warnings :)
+warnings.filterwarnings("ignore") # ignore warnings, the code is obviously perfect but just, you know... :)
 
 # Creating a two bar truss problem
 
@@ -16,18 +16,18 @@ obj = np.array([
     True, True, True, True, # Optimizing all
 ])
 
-# Approximate ideal and nadir
-# ideal = 50, 3.59, 50, 0.015
-# nadir = 580, 3.42, 100, 0.067
+# Approximate ideal and nadir for a problem with no constraints
+# ideal = 573, 2950, 535, 9
+# nadir = 0.01, 2.1, 1.5, 0.01
 
 
 # Set constraint for objectives, [lower, upper]
 # If no constraint then set it to None
 # Notice that breaking constraints will result in a penalty and therefore we might get results that break the constraints
 constraints = np.array([
-    [100, None], # weight > 100
-    [None, 15], # stress < 15
-    [60, 100], # 60 < buckling < 100
+    [10, 100], #  10 < weight < 100
+    [15, None], # stress > 15
+    [None, 100], # buckling < 100
     [None, None], # deflection no constraint
 ])
 
@@ -43,7 +43,9 @@ problem, method = create_problem(load, obj, constraints)
 
 # The method will create reference points from nadir to ideal with these step sizes
 # large step sizes => less solutions but faster calculation
-step_sizes = np.array([10, 20, 15, 2])[obj]
+# The create_problem method below will print approximate values of the nadir and ideal
+# This might help you set the step sizes to fit the problem.
+step_sizes = np.array([2, 5, 2, 0.3])[obj]
 
 # The method returns the decision vectors and corresponding objective vectors
 var, obj = solve_pareto_front_representation(problem, step_sizes, solver_method= method)

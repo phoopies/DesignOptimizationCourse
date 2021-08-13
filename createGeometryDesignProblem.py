@@ -27,7 +27,7 @@ obj = np.array([
 constraints = np.array([
     [0.2, None], # Surface area > 0.2
     [.5, .8], # .5 < volume < .8. Even though we're not optimizing volume, we can set a constraint on it  
-    [None, None], # No constraint on min height
+    [.4, None], #  min height > .4
     [None, 0.6], # floor area < .6 
 ])
 
