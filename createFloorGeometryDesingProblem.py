@@ -26,7 +26,7 @@ constraints = np.array([
 # How many 3d points should the hull be formed of
 # more points => More complex problem : longer execution times
 # Less points => More likely to fail in constructing the hull
-variable_count = 12 # Around 10 - 25 seems to be good enough
+variable_count = 15 # Around 15 - 25 seems to be good enough
 
 # To create the problem we can call the gd_create method with the parameters defined earlier
 # the pfront argument should be set to True if using the solve_pareto_front_representation method as it doesn't 
@@ -43,7 +43,7 @@ problem, method = create_problem(variable_count, constraints, pfront = True)
 # The method will create reference points from nadir to ideal with these step sizes
 # in this case : ref points = [[5,0], [4.5, 0], [4, 0] ... [5, 0.2], [4.8, 0.2] ... [0, 1]]
 # large step sizes => less solutions but faster calculation
-step_sizes = np.array([1, .5])
+step_sizes = np.array([.5, .2])
 
 # The method returns the decision vectors and corresponding objective vectors
 var, obj = solve_pareto_front_representation(problem, step_sizes, solver_method= method)
@@ -51,4 +51,4 @@ var, obj = solve_pareto_front_representation(problem, step_sizes, solver_method=
 # save the solution if you wish, make sure to change the name to not accidentally overwrite an existing solution.
 # Saved solutions can be used later to visualize it
 # The solution will be saved to modules/DataAndVisualization/'name'
-save("gdcExample1", obj, var, problem.nadir, problem.ideal)
+save("gdfExample", obj, var, problem.nadir, problem.ideal)

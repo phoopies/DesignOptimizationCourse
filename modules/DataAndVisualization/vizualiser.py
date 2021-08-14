@@ -13,11 +13,27 @@ def point_cloud_1d_to_3d(point_cloud_1d: np.ndarray):
     point_cloud_3d = point_cloud_1d.reshape(points_n, 3)
     return point_cloud_3d
 
-def plot_parallel(obj, axis_names = None):
-    sample = obj
-    if obj.shape[0] > 1000: 
-        sample = obj[np.random.choice(obj.shape[0], 1000, replace=False)]
-    fig = parallel_coordinates(sample, labels=axis_names)
+def plot_parallel(obj, axis_names = None, axis_ranges = None):
+    sample = np.array(obj)
+    if axis_ranges is not None:
+        axis_ranges = np.array(axis_ranges)
+        axis_ranges[:,0][axis_ranges[:,0] == None] = -np.inf
+        axis_ranges[:,1][axis_ranges[:,1] == None] = np.inf
+        if axis_ranges.shape[0] != sample.shape[1]:
+            raise Exception("Axis range should have be the equal to the count of objectives")
+        if axis_ranges.shape[1] != 2: 
+            raise Exception("Axis range should be 2 dimensional")
+        t = ((np.all((axis_ranges[:,1] >= sample), axis = -1)))
+        s = (np.all((axis_ranges[:,0] <= sample), axis = -1))
+        in_range = np.logical_and(t,s)
+        sample = sample[in_range]
+
+    if sample.shape[0] > 1000: 
+        sample = sample[np.random.choice(sample.shape[0], 1000, replace=False)]
+    fig = parallel_coordinates(
+        sample,
+        labels=axis_names,
+    )
     fig.show()
 
 def plot_scatter_clickable(obj, var, axis_names = None, axis_ranges = None):

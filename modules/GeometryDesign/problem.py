@@ -1,11 +1,9 @@
 import numpy as np
-from desdeo_problem.problem.Constraint import ScalarConstraint
 from desdeo_tools.solver import ScalarMethod
 from scipy.optimize import minimize
 from desdeo_problem.problem.Objective import  _ScalarObjective
 from desdeo_problem.problem.Problem import MOProblem
 from desdeo_problem.problem.Variable import variable_builder
-from scipy.spatial.qhull import ConvexHull
 
 from modules.GeometryDesign.tent import Tent
 from modules import utils

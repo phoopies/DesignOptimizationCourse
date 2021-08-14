@@ -4,11 +4,12 @@ from modules.TwoBarTruss.problem import create_problem
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore") # ignore warnings, the code is obviously perfect but just, you know... :)
+# And still scipy float warnings arise...
 
 # Creating a two bar truss problem
 
 # a constant load value for the problem
-load = 65 
+load = 66 
 
 # Which objectives do you wish to optimize
 # weight, stress, buckling stress and deflection
@@ -17,8 +18,8 @@ obj = np.array([
 ])
 
 # Approximate ideal and nadir for a problem with no constraints
-# ideal = 573, 2950, 535, 9
-# nadir = 0.01, 2.1, 1.5, 0.01
+# nadir = 573, 2950, 535, 9
+# ideal = 0.01, 2.1, 1.5, 0.01
 
 
 # Set constraint for objectives, [lower, upper]
@@ -30,6 +31,8 @@ constraints = np.array([
     [None, 100], # buckling < 100
     [None, None], # deflection no constraint
 ])
+
+
 
 # To create the problem we can call the create_problem method with the parameters defined earlier
 # The method returns a MOProblem and a scalarmethod instance which can be passed to different Desdeo objects
@@ -45,12 +48,12 @@ problem, method = create_problem(load, obj, constraints)
 # large step sizes => less solutions but faster calculation
 # The create_problem method below will print approximate values of the nadir and ideal
 # This might help you set the step sizes to fit the problem.
-step_sizes = np.array([2, 5, 2, 0.3])[obj]
+step_sizes = np.array([100, 177, 100, 4])[obj]
 
 # The method returns the decision vectors and corresponding objective vectors
-var, obj = solve_pareto_front_representation(problem, step_sizes, solver_method= method)
+var, obj = solve_pareto_front_representation(problem, step_sizes)
 
 # save the solution if you wish, make sure to change the name to not accidentally overwrite an existing solution.
 # Saved solutions can be used later to visualize it
 # The solution will be saved to modules/DataAndVisualization/'name'
-save("tbExample1", obj, var, problem.nadir, problem.ideal)
+save("tbExample", obj, var, problem.nadir, problem.ideal)

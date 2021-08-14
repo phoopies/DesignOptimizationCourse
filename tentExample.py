@@ -22,7 +22,7 @@ def run_example():
 
 
     # Box example:
-    print("Making a box")
+    print(f"{'-'*50}\nMaking a box")
     # Define the points
     box_points = np.array([
         [0,0,0], [1,0,0], [0,1,0], [1,1,0], # floor corners

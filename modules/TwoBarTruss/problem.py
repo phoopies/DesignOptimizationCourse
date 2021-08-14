@@ -22,9 +22,6 @@ from modules import utils
 from desdeo_problem.problem.Problem import MOProblem
 from desdeo_problem.problem.Objective import _ScalarObjective
 from desdeo_problem.problem.Variable import variable_builder
-from desdeo_emo.EAs.RVEA import RVEA
-from desdeo_emo.EAs.NSGAIII import NSGAIII
-from desdeo_mcdm.interactive.ReferencePointMethod import ReferencePointMethod
 from desdeo_mcdm.utilities.solvers import payoff_table_method
 from scipy.optimize import  minimize
 from desdeo_tools.solver import ScalarMethod
@@ -32,7 +29,7 @@ import numpy as np
 
 
 
-def create_problem(load = 66, obj_mask = [True]*4, constraints = None):
+def create_problem(load = 65, obj_mask = [True]*4, constraints = None):
     if constraints is not None:
         if constraints.shape[0] != 4 or constraints.shape[1] != 2:
             raise("invalid constraints")
@@ -51,7 +48,7 @@ def create_problem(load = 66, obj_mask = [True]*4, constraints = None):
 
     def stress(xs: np.ndarray) -> np.ndarray:
         xs = np.atleast_2d(xs)
-        H, d, t, B, E, p = xs.T # vectorization
+        H, d, t, B, E, p = xs.T
         numerator = load * np.sqrt(np.square(B / 2) + np.square(H))
         denominator = 2 * t * np.pi * d * H
         return numerator / denominator
@@ -77,7 +74,7 @@ def create_problem(load = 66, obj_mask = [True]*4, constraints = None):
     var_names = ["H", "d", "t", "B", "E", "p"] 
     var_count = len(var_names)
 
-    initial_values = np.array([30.0, 3.0, 0.15, 60.0, 30000., 0.3])
+    initial_values = np.array([30.0, 3.0, 0.1, 60.0, 30000., 0.3])
 
     # set lower bounds for each variable
     lower_bounds = np.array([20.0, 0.5, 0.01, 20.0, 25000., 0.01])
@@ -119,7 +116,6 @@ def create_problem(load = 66, obj_mask = [True]*4, constraints = None):
     # Create the problem
     # This problem object can be passed to various different methods defined in DESDEO
     prob = MOProblem(objectives=objectives, variables=variables, constraints=cons)
-
 
     scipy_de_method = ScalarMethod(
         lambda x, _, **y: minimize(x, **y, x0 = initial_values),

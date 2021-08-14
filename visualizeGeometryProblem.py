@@ -29,7 +29,7 @@ axis_names = ["Surface area", "Volume", "Min height", "Floor area"]
 # => close the tent plot => back to objectives plot
 
 # Load a 3d problem
-obj, var, _nadir, _ideal = load("gdExample1")
+obj, var, _nadir, _ideal = load("gd2")
 obj = abs(obj)
 axis_names = ["Surface area", "Volume", "floor area"]
 
