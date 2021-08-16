@@ -13,7 +13,7 @@ from modules.utils import load
 # First load the solution. For more details on on the solution check the readme file in modules/DataAndVisualization
 obj, var, nadir, ideal = load("tb4")
 
-# This problem is 2 dimensional as it is only optimizing weight and stress
+# This problem is 3 dimensional as it is only optimizing weight, stress and buckling stress
 # so we can use a scatter or a parallel plot to visualize it. We will use a scatter plot
 
 # Set the axis names accordingly
@@ -35,7 +35,7 @@ obj2, var2, nadir2, ideal2 = load("tb1")
 # Set axis names
 axis_names = ["weight", "stress", "buckling stress", "deflection"]
 
-# Set dimensions for each axis
+# Set dimensions for each axis, rows should match objectives.
 # (This will filter objectives with values that break the dimensions thus they wont be shown on the plot. None will be converted to -/+ np.inf)
 dimensions = [
     [10,None],
